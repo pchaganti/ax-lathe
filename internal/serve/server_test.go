@@ -103,3 +103,21 @@ func TestNotFound(t *testing.T) {
 		t.Errorf("GET /nonexistent/ = %d, want %d", w.Code, http.StatusNotFound)
 	}
 }
+
+func TestSeriesRedirect(t *testing.T) {
+	dir := t.TempDir()
+	makeTestTutorial(t, dir, "test-series", true)
+
+	srv := serve.NewServer(dir)
+	req := httptest.NewRequest(http.MethodGet, "/test-series/", nil)
+	w := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(w, req)
+
+	if w.Code != http.StatusFound {
+		t.Errorf("GET /test-series/ = %d, want %d (redirect)", w.Code, http.StatusFound)
+	}
+	loc := w.Header().Get("Location")
+	if loc != "/test-series/part-01.md" {
+		t.Errorf("redirect Location = %q, want %q", loc, "/test-series/part-01.md")
+	}
+}

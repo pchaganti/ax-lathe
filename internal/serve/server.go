@@ -1,6 +1,7 @@
 package serve
 
 import (
+	"bytes"
 	"embed"
 	"fmt"
 	"html/template"
@@ -54,7 +55,13 @@ func (s *Server) handleList(w http.ResponseWriter, r *http.Request) {
 		}
 		tutorials = append(tutorials, tut)
 	}
-	s.listTmpl.Execute(w, map[string]any{"Tutorials": tutorials})
+	var buf bytes.Buffer
+	if err := s.listTmpl.Execute(&buf, map[string]any{"Tutorials": tutorials}); err != nil {
+		http.Error(w, "template error", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	buf.WriteTo(w)
 }
 
 func (s *Server) handleTutorial(w http.ResponseWriter, r *http.Request) {
@@ -95,10 +102,16 @@ func (s *Server) renderPart(w http.ResponseWriter, tut *store.Tutorial, tutDir, 
 		http.Error(w, "render error", http.StatusInternalServerError)
 		return
 	}
-	s.layoutTmpl.Execute(w, map[string]any{
+	var buf bytes.Buffer
+	if err := s.layoutTmpl.Execute(&buf, map[string]any{
 		"Title":       tut.Title,
 		"Tutorial":    tut,
 		"CurrentPart": part,
 		"Content":     template.HTML(content),
-	})
+	}); err != nil {
+		http.Error(w, "template error", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	buf.WriteTo(w)
 }
