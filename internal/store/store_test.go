@@ -66,6 +66,22 @@ func TestStoreVerifyingStatus(t *testing.T) {
 	}
 }
 
+func TestStoreWithVerifyStatus(t *testing.T) {
+	src := t.TempDir()
+	if err := os.WriteFile(filepath.Join(src, "index.md"), []byte("# Hello"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("HOME", t.TempDir())
+
+	tut, err := store.Store(src, true)
+	if err != nil {
+		t.Fatalf("Store() error = %v", err)
+	}
+	if tut.Status != store.StatusVerifying {
+		t.Errorf("Store() Status = %q, want %q", tut.Status, store.StatusVerifying)
+	}
+}
+
 func TestSlugToTitle(t *testing.T) {
 	cases := []struct {
 		slug  string
