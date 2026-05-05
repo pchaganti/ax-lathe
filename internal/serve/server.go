@@ -20,6 +20,7 @@ type Server struct {
 	tutorialsDir string
 	layoutTmpl   *template.Template
 	listTmpl     *template.Template
+	highlightCSS template.CSS
 }
 
 func NewServer(tutorialsDir string) *Server {
@@ -28,7 +29,11 @@ func NewServer(tutorialsDir string) *Server {
 	}
 	layoutTmpl := template.Must(template.New("layout.html").Funcs(funcMap).ParseFS(templateFS, "layout.html"))
 	listTmpl := template.Must(template.New("list.html").ParseFS(templateFS, "list.html"))
-	return &Server{tutorialsDir: tutorialsDir, layoutTmpl: layoutTmpl, listTmpl: listTmpl}
+	css, err := HighlightCSS()
+	if err != nil {
+		panic(fmt.Sprintf("lathe: failed to build syntax-highlight CSS: %v", err))
+	}
+	return &Server{tutorialsDir: tutorialsDir, layoutTmpl: layoutTmpl, listTmpl: listTmpl, highlightCSS: css}
 }
 
 func (s *Server) Handler() http.Handler {
@@ -57,7 +62,10 @@ func (s *Server) handleList(w http.ResponseWriter, r *http.Request) {
 		tutorials = append(tutorials, tut)
 	}
 	var buf bytes.Buffer
-	if err := s.listTmpl.Execute(&buf, map[string]any{"Tutorials": tutorials}); err != nil {
+	if err := s.listTmpl.Execute(&buf, map[string]any{
+		"Tutorials":    tutorials,
+		"HighlightCSS": s.highlightCSS,
+	}); err != nil {
 		http.Error(w, "template error", http.StatusInternalServerError)
 		return
 	}
@@ -121,10 +129,11 @@ func (s *Server) renderPart(w http.ResponseWriter, tut *store.Tutorial, tutDir, 
 	}
 	var buf bytes.Buffer
 	if err := s.layoutTmpl.Execute(&buf, map[string]any{
-		"Title":       tut.Title,
-		"Tutorial":    tut,
-		"CurrentPart": part,
-		"Content":     template.HTML(content),
+		"Title":        tut.Title,
+		"Tutorial":     tut,
+		"CurrentPart":  part,
+		"Content":      template.HTML(content),
+		"HighlightCSS": s.highlightCSS,
 	}); err != nil {
 		http.Error(w, "template error", http.StatusInternalServerError)
 		return
