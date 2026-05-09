@@ -98,7 +98,7 @@ func (s *Server) handleAsk(w http.ResponseWriter, r *http.Request) {
 		"-p",
 		"--output-format", "stream-json",
 		"--include-partial-messages",
-		"--project-dir", tutDir,
+		"--add-dir", tutDir,
 		"--allowedTools", "Read,Glob,Grep",
 		"--dangerously-skip-permissions",
 		"--system-prompt", system,

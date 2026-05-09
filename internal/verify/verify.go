@@ -36,7 +36,7 @@ func SpawnVerifier(slug, tutorialDir string) error {
 	)
 
 	cmd := exec.Command("claude",
-		"--project-dir", tempDir,
+		"--add-dir", tempDir,
 		"--dangerously-skip-permissions",
 		"-p", prompt,
 	)
