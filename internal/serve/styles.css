@@ -191,13 +191,22 @@ pre[data-overflow="true"]{box-shadow:inset -18px 0 14px -12px rgba(40,30,20,.20)
 
 /* ---- 4. Components ------------------------------------------------------- */
 
-/* Status badge (shared: sidebar + list cards) */
-.badge{display:inline-block;font-family:var(--font-display);font-size:.7rem;font-weight:600;letter-spacing:.01em;padding:.2rem .5rem;border-radius:var(--radius-sm);line-height:1.4}
-.badge.verified{background:var(--badge-verified-bg);color:var(--badge-verified-text)}
-.badge.verifying{background:var(--badge-verifying-bg);color:var(--badge-verifying-text)}
-.badge.failed{background:var(--badge-failed-bg);color:var(--badge-failed-text)}
-.badge.extending{background:var(--badge-extending-bg);color:var(--badge-extending-text)}
-.badge.skipped{background:var(--badge-skipped-bg);color:var(--badge-skipped-text)}
+/* Status badge (shared: sidebar + list cards). Quiet by design — a colored dot
+   + a muted serif label, no filled pill. The dot carries the semantics via the
+   existing --badge-<status>-text tokens (contrast-correct in both themes); the
+   label stays --text-faint so it reads as calm metadata next to the title. The
+   --badge-*-bg tokens are intentionally left defined-but-unused. */
+.badge{display:inline-flex;align-items:center;gap:.4rem;font-family:var(--font-display);font-size:.7rem;font-weight:600;letter-spacing:.01em;line-height:1.4;color:var(--text-faint)}
+.badge-dot{width:.5rem;height:.5rem;border-radius:9999px;flex-shrink:0;background:var(--text-faint)}
+.badge.verified .badge-dot{background:var(--badge-verified-text)}
+.badge.verifying .badge-dot{background:var(--badge-verifying-text)}
+.badge.failed .badge-dot{background:var(--badge-failed-text)}
+.badge.extending .badge-dot{background:var(--badge-extending-text)}
+.badge.skipped .badge-dot{background:var(--badge-skipped-text)}
+/* In-flight states get a gentle pulse; stilled for reduced-motion users. */
+.badge.verifying .badge-dot,.badge.extending .badge-dot{animation:badge-pulse 1.6s ease-in-out infinite}
+@keyframes badge-pulse{0%,100%{opacity:1}50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.badge.verifying .badge-dot,.badge.extending .badge-dot{animation:none}}
 
 /* Button — the one button primitive. Variants: primary (accent fill), ghost
    (outline), danger (failed tint). Modifiers: pill (rounded), sm (compact).
@@ -345,14 +354,20 @@ body.list{max-width:46rem;margin:clamp(1.5rem,.9rem + 2vw,3rem) auto;padding:0 c
 body.list .header{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap}
 body.list .header > div{min-width:0;flex:1 1 auto}
 body.list h1{font-family:var(--font-display);font-size:clamp(1.7rem,1.3rem + 1.4vw,2.2rem);margin-bottom:.35rem;line-height:1.15;letter-spacing:-.015em}
-.subtitle{color:var(--text-faint);margin-bottom:2.25rem;font-size:.98rem;font-style:italic}
-.tutorial{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:1rem 1.25rem;margin:.75rem 0;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;transition:border-color var(--transition),box-shadow var(--transition)}
+.subtitle{color:var(--text-faint);margin-bottom:1.75rem;font-size:.98rem;font-style:italic}
+/* Cards use the stretched-link pattern: the title's ::after overlay covers the
+   whole card so a click anywhere opens the tutorial, while .tutorial-actions is
+   lifted above it (z-index) so the delete button still works. Denser padding +
+   margins than the reading shell to make the index scan quickly. */
+.tutorial{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:.7rem 1rem;margin:.5rem 0;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;transition:border-color var(--transition),box-shadow var(--transition)}
 .tutorial:hover{border-color:var(--border-strong);box-shadow:var(--shadow-sm)}
-.tutorial > div:first-child{min-width:0;flex:1 1 14rem}
-.tutorial a{text-decoration:none;color:var(--accent);font-family:var(--font-display);font-weight:600;font-size:1.08rem;display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis}
-.tutorial a:hover{color:var(--accent-hover);text-decoration:underline;text-underline-offset:2px}
+.tutorial-body{min-width:0;flex:1 1 14rem}
+.tutorial-link{text-decoration:none;color:var(--accent);font-family:var(--font-display);font-weight:600;font-size:1.08rem;display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.tutorial-link::after{content:'';position:absolute;inset:0;z-index:0}
+.tutorial:hover .tutorial-link{color:var(--accent-hover);text-decoration:underline;text-underline-offset:2px}
 .meta{font-size:.8rem;color:var(--text-faint);margin-top:.25rem}
-.tutorial-actions{display:flex;align-items:center;gap:.6rem;flex-shrink:0;flex-wrap:wrap}
+/* Sits above the stretched-link overlay so the badge reads and the × deletes. */
+.tutorial-actions{position:relative;z-index:1;display:flex;align-items:center;gap:.6rem;flex-shrink:0;flex-wrap:wrap}
 .delete-form{margin:0}
 .delete-btn{background:transparent;border:1px solid var(--border);color:var(--text-faint);font:inherit;font-size:1rem;line-height:1;min-width:32px;min-height:32px;padding:.15rem .55rem;border-radius:var(--radius-sm);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:color var(--transition),border-color var(--transition),background var(--transition)}
 .delete-btn:hover{color:var(--badge-failed-text);border-color:var(--badge-failed-text);background:var(--badge-failed-bg)}
@@ -360,14 +375,26 @@ body.list h1{font-family:var(--font-display);font-size:clamp(1.7rem,1.3rem + 1.4
 .empty code{background:var(--code-bg);color:var(--code-text);padding:.1rem .35rem;border-radius:var(--radius-sm);font-family:var(--font-mono);font-size:.85em;font-style:normal}
 
 /* List controls — client-side search, sort, and tag/status filters. Pure
-   progressive enhancement: without JS every card stays visible (.hidden is only
-   ever set by the list page script). */
-.controls{margin:0 0 1.25rem;display:flex;flex-direction:column;gap:.7rem}
-.controls-row{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center}
+   progressive enhancement: without JS every card and every filter stays visible
+   (.hidden / .collapsed are only ever set by the list page script). The toolbar
+   row (search + sort + Filters toggle) is always shown; the pill rows live in a
+   panel the toggle collapses on load. */
+.controls{margin:0 0 1.25rem;display:flex;flex-direction:column;gap:.6rem}
+.toolbar{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center}
 .search-input{flex:1 1 14rem;min-width:0;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-md);padding:.55rem .75rem;font-family:var(--font-body);font-size:.95rem;line-height:1.4}
 .search-input:focus{outline:2px solid var(--accent);outline-offset:1px}
 .sort-select{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-md);padding:.5rem .65rem;font-family:var(--font-display);font-size:.85rem;font-weight:600;cursor:pointer}
 .sort-select:focus{outline:2px solid var(--accent);outline-offset:1px}
+/* Filters toggle — shares the sort-select / filter-pill vocabulary. .has-active
+   tints it with the accent soft so an active filter set reads even when the
+   panel is collapsed. */
+.filter-toggle{background:var(--surface);color:var(--text-subtle);border:1px solid var(--border);border-radius:var(--radius-md);padding:.5rem .8rem;font-family:var(--font-display);font-size:.85rem;font-weight:600;cursor:pointer;transition:background var(--transition),color var(--transition),border-color var(--transition)}
+.filter-toggle:hover{background:var(--surface-sunken);color:var(--text)}
+.filter-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.filter-toggle[aria-expanded="true"]{background:var(--surface-sunken);color:var(--text);border-color:var(--border-strong)}
+.filter-toggle.has-active{color:var(--accent);border-color:var(--accent);background:var(--accent-soft)}
+.filter-panel{display:flex;flex-direction:column;gap:.55rem;padding-top:.15rem}
+.filter-panel.collapsed{display:none}
 .filter-row{display:flex;gap:.4rem;flex-wrap:wrap;align-items:center}
 .filter-label{font-family:var(--font-display);font-size:.75rem;font-weight:600;color:var(--text-faint);margin-right:.15rem}
 .filter-pill{font-family:var(--font-display);font-size:.78rem;font-weight:600;color:var(--text-subtle);background:transparent;border:1px solid var(--border);padding:.3rem .7rem;border-radius:9999px;cursor:pointer;transition:background var(--transition),color var(--transition),border-color var(--transition)}

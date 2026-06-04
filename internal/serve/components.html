@@ -26,15 +26,17 @@
   <style>{{.CSS}}{{.HighlightCSS}}</style>
 {{end}}
 
-{{/* badge — renders a status pill. Dot (.) is a store.Status. Unverified (and
-     any unknown value) renders nothing, matching the terminal statusBadge in
-     cmd/list.go. Keep the emoji+word vocabulary in sync with it. */}}
+{{/* badge — renders a quiet status marker: a colored dot + a muted serif label
+     (no emoji). Dot (.) is a store.Status. Unverified (and any unknown value)
+     renders nothing — the calm default — matching the terminal statusBadge in
+     cmd/list.go. The outer class="badge <status>" is a CSS + test hook; the
+     dot color comes from the per-status .badge-dot rules in styles.css. */}}
 {{define "badge"}}
-{{- if eq . "verified"}}<span class="badge verified">✅ Verified</span>
-{{- else if eq . "verifying"}}<span class="badge verifying">⏳ Verifying…</span>
-{{- else if eq . "failed"}}<span class="badge failed">❌ Failed</span>
-{{- else if eq . "skipped"}}<span class="badge skipped">⚠️ Skipped</span>
-{{- else if eq . "extending"}}<span class="badge extending">⏳ Extending…</span>
+{{- if eq . "verified"}}<span class="badge verified"><span class="badge-dot"></span>Verified</span>
+{{- else if eq . "verifying"}}<span class="badge verifying"><span class="badge-dot"></span>Verifying…</span>
+{{- else if eq . "failed"}}<span class="badge failed"><span class="badge-dot"></span>Failed</span>
+{{- else if eq . "skipped"}}<span class="badge skipped"><span class="badge-dot"></span>Skipped</span>
+{{- else if eq . "extending"}}<span class="badge extending"><span class="badge-dot"></span>Extending…</span>
 {{- end}}
 {{end}}
 

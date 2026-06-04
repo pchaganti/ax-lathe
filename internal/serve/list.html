@@ -14,34 +14,37 @@
 </div>
 {{if .Tutorials}}
 <div class="controls">
-  <div class="controls-row">
+  <div class="toolbar">
     <input type="search" id="searchInput" class="search-input" placeholder="Search by title, topic, or tag…" aria-label="Search tutorials" autocomplete="off">
     <select id="sortSelect" class="sort-select" aria-label="Sort tutorials">
       <option value="newest">Newest</option>
       <option value="oldest">Oldest</option>
       <option value="title">Title A–Z</option>
     </select>
+    <button type="button" id="filterToggle" class="filter-toggle" aria-expanded="false" aria-controls="filterPanel">Filters</button>
   </div>
-  <div class="filter-row" id="statusFilters">
-    <span class="filter-label">Status</span>
-    <button type="button" class="filter-pill" aria-pressed="false" data-status="verified">✅ Verified</button>
-    <button type="button" class="filter-pill" aria-pressed="false" data-status="failed">❌ Failed</button>
-    <button type="button" class="filter-pill" aria-pressed="false" data-status="skipped">⚠️ Skipped</button>
-    <button type="button" class="filter-pill" aria-pressed="false" data-status="unverified">Unverified</button>
-  </div>
-  <div class="filter-row" id="typeFilters">
-    <span class="filter-label">Type</span>
-    <button type="button" class="filter-pill" aria-pressed="false" data-series="false">Single</button>
-    <button type="button" class="filter-pill" aria-pressed="false" data-series="true">Series</button>
-  </div>
-  <div class="filter-row" id="tagFilters" hidden>
-    <span class="filter-label">Tags</span>
+  <div class="filter-panel" id="filterPanel">
+    <div class="filter-row" id="statusFilters">
+      <span class="filter-label">Status</span>
+      <button type="button" class="filter-pill" aria-pressed="false" data-status="verified">Verified</button>
+      <button type="button" class="filter-pill" aria-pressed="false" data-status="failed">Failed</button>
+      <button type="button" class="filter-pill" aria-pressed="false" data-status="skipped">Skipped</button>
+      <button type="button" class="filter-pill" aria-pressed="false" data-status="unverified">Unverified</button>
+    </div>
+    <div class="filter-row" id="typeFilters">
+      <span class="filter-label">Type</span>
+      <button type="button" class="filter-pill" aria-pressed="false" data-series="false">Single</button>
+      <button type="button" class="filter-pill" aria-pressed="false" data-series="true">Series</button>
+    </div>
+    <div class="filter-row" id="tagFilters" hidden>
+      <span class="filter-label">Tags</span>
+    </div>
   </div>
 </div>
 {{range .Tutorials}}
 <div class="tutorial" data-title="{{.Title}}" data-slug="{{.Slug}}" data-topic="{{.Topic}}" data-tags="{{range .Tags}}{{.}},{{end}}" data-status="{{.Status}}" data-created="{{.Created.Format "2006-01-02T15:04:05Z07:00"}}" data-series="{{.IsSeries}}">
-  <div>
-    <a href="/{{.Slug}}/">{{.Title}}</a>
+  <div class="tutorial-body">
+    <a class="tutorial-link" href="/{{.Slug}}/">{{.Title}}</a>
     <div class="meta">{{if .IsSeries}}{{len .Parts}} parts{{else}}single tutorial{{end}} · {{.Created.Format "Jan 2, 2006"}}{{if .Sources}} · {{len .Sources}} source{{if ne (len .Sources) 1}}s{{end}}{{end}}</div>
     {{if .Tags}}<div class="tags">{{range .Tags}}<span class="tag">{{.}}</span>{{end}}</div>{{end}}
   </div>
@@ -100,11 +103,21 @@
     if (!cards.length) return;
     var search = document.getElementById('searchInput');
     var sortSel = document.getElementById('sortSelect');
+    var filterToggle = document.getElementById('filterToggle');
+    var filterPanel = document.getElementById('filterPanel');
     var statusRow = document.getElementById('statusFilters');
     var typeRow = document.getElementById('typeFilters');
     var tagRow = document.getElementById('tagFilters');
     var noResults = document.getElementById('noResults');
     var container = cards[0].parentNode;
+
+    // Collapse the filter panel by default — calmer first view. Doing this in JS
+    // (not via a static `hidden`) keeps every pill visible when JS is off.
+    filterPanel.classList.add('collapsed');
+    filterToggle.addEventListener('click', function(){
+      var open = filterPanel.classList.toggle('collapsed') === false;
+      filterToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
 
     function cardTags(card){
       return (card.dataset.tags || '').split(',').map(function(s){return s.trim();}).filter(Boolean);
@@ -149,6 +162,11 @@
         if (show) visible++;
       });
       noResults.hidden = visible !== 0;
+      // Surface how many pill filters are active so collapsing the panel never
+      // hides that filtering is on.
+      var active = statuses.length + types.length + tags.length;
+      filterToggle.textContent = active ? 'Filters · ' + active : 'Filters';
+      filterToggle.classList.toggle('has-active', active > 0);
     }
 
     function sort(){

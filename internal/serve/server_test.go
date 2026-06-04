@@ -93,11 +93,26 @@ func TestListPageRendersTagsAndControls(t *testing.T) {
 	if !strings.Contains(body, `id="sortSelect"`) {
 		t.Error("list page missing the sort control")
 	}
+	if !strings.Contains(body, `id="filterToggle"`) {
+		t.Error("list page missing the collapsible Filters toggle")
+	}
 	if !strings.Contains(body, `data-tags="rust,audio,"`) {
 		t.Error("list page card missing data-tags attribute for search/filter")
 	}
 	if !strings.Contains(body, `<span class="tag">rust</span>`) {
 		t.Error("list page missing rendered tag pill")
+	}
+	// Whole-card stretched link: the title anchor carries .tutorial-link and
+	// points at the tutorial; the overlay (::after) makes the card clickable.
+	if !strings.Contains(body, `class="tutorial-link" href="/tagged-tutorial/"`) {
+		t.Error("list page card missing the stretched .tutorial-link anchor")
+	}
+	// Badge is now a quiet dot + serif label — no emoji pill.
+	if !strings.Contains(body, `<span class="badge-dot"></span>`) {
+		t.Error("list page badge missing the dot marker (dot + label restyle)")
+	}
+	if strings.Contains(body, "✅") || strings.Contains(body, "❌") {
+		t.Error("list page badge still renders emoji; expected dot + label")
 	}
 }
 
