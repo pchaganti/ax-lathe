@@ -33,6 +33,29 @@ func TestRenderMarkdown(t *testing.T) {
 	}
 }
 
+func TestRenderTable(t *testing.T) {
+	src := []byte("intro\n\n| Approach | Composes | Needs OS |\n|---|---|---|\n| Blocking | no | no |\n| Scheduler | yes | no |\n\noutro\n")
+	out, err := serve.RenderMarkdown(src)
+	if err != nil {
+		t.Fatalf("RenderMarkdown() error = %v", err)
+	}
+	html := string(out)
+
+	if !strings.Contains(html, "<table>") {
+		t.Errorf("GFM table not rendered as <table>, got:\n%s", html)
+	}
+	if !strings.Contains(html, "<th>Approach</th>") {
+		t.Errorf("table header cell missing, got:\n%s", html)
+	}
+	if !strings.Contains(html, "<td>Scheduler</td>") {
+		t.Errorf("table body cell missing, got:\n%s", html)
+	}
+	// The raw pipe-delimited markup must not leak as literal text.
+	if strings.Contains(html, "|---|") {
+		t.Errorf("raw table delimiter row leaked into output, got:\n%s", html)
+	}
+}
+
 func TestRenderMermaidBlock(t *testing.T) {
 	src := []byte("intro paragraph\n\n```mermaid\nflowchart LR\n  A --> B\n  B --> C\n```\n\noutro paragraph\n")
 

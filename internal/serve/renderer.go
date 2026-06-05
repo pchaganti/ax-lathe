@@ -13,6 +13,7 @@ import (
 	"github.com/yuin/goldmark"
 	highlighting "github.com/yuin/goldmark-highlighting/v2"
 	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	goldmarkhtml "github.com/yuin/goldmark/renderer/html"
 	"github.com/yuin/goldmark/text"
@@ -69,6 +70,9 @@ func RenderMarkdownWithTOC(src []byte) ([]byte, []TOCEntry, error) {
 					chromahtml.WithClasses(true),
 				),
 			),
+			// GFM tables — without this, pipe-delimited tables fall through as
+			// literal text. styles.css already styles <table>/<th>/<td>.
+			extension.Table,
 		),
 		goldmark.WithParserOptions(parser.WithAutoHeadingID()),
 		goldmark.WithRendererOptions(
