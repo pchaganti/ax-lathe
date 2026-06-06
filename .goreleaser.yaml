@@ -41,6 +41,7 @@ archives:
       {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
     files:
       - README.md
+      - LICENSE
 
 checksum:
   name_template: checksums.txt
@@ -65,7 +66,11 @@ changelog:
     - title: Others
       order: 999
 
-brews:
+# Homebrew cask (macOS only -- Homebrew on Linux can't install casks; Linux
+# users use install.sh or `go install`). Casks are GoReleaser's supported path
+# for distributing pre-built binaries (the deprecated `brews:`/formula path is
+# meant for build-from-source).
+homebrew_casks:
   - name: lathe
     repository:
       owner: devenjarvis
@@ -73,15 +78,19 @@ brews:
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     homepage: https://github.com/devenjarvis/lathe
     description: Generate, store, serve, verify, and extend hands-on technical tutorials
-    # Add `license: MIT` here once a LICENSE file is added to the repo.
-    # Keep generated formula commits attributable.
+    license: MIT
+    # Keep generated cask commits attributable.
     commit_author:
       name: goreleaser-bot
       email: goreleaser-bot@users.noreply.github.com
-    install: |
-      bin.install "lathe"
-    test: |
-      system "#{bin}/lathe", "--version"
+    # The release binaries are unsigned, so macOS Gatekeeper quarantines them on
+    # download. Strip the quarantine attribute on install so `lathe` runs without
+    # a "cannot be opened" prompt. Casks only run on macOS, so /usr/bin/xattr is
+    # always present -- no guard needed.
+    hooks:
+      post:
+        install: |
+          system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/lathe"]
 
 release:
   draft: false

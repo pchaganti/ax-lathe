@@ -40,11 +40,14 @@ Lathe is a single self-contained binary. All you need is `lathe` on your `$PATH`
 skills run in an interactive Claude Code (or Cursor) session — the binary never spawns
 `claude` itself.
 
-**Homebrew** (recommended):
+**Homebrew** (macOS, recommended):
 
 ```bash
 brew install devenjarvis/tap/lathe
 ```
+
+Distributed as a cask (a pre-built binary), so it's macOS-only — on Linux use the
+install script or `go install` below.
 
 **Install script** (`curl | sh`):
 
@@ -210,7 +213,7 @@ git push origin v0.1.0
 The `release` workflow runs [GoReleaser](https://goreleaser.com) (config in
 `.goreleaser.yaml`): it builds darwin/linux × amd64/arm64 binaries, publishes a
 GitHub Release with checksums and a generated changelog, and updates the Homebrew
-tap formula in `devenjarvis/homebrew-tap`. The tap update needs a
+cask in `devenjarvis/homebrew-tap`. The tap update needs a
 `HOMEBREW_TAP_GITHUB_TOKEN` repo secret (a PAT with `contents:write` on the tap repo).
 
 Dry-run locally without tagging:
