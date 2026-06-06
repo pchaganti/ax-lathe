@@ -32,6 +32,6 @@ jobs:
       - name: Install Mage
         run: go install github.com/magefile/mage@v1.15.0
 
-      # Mirrors local `mage check`: fmt-check, vet, lint, test (-race), build.
+      # Mirrors local `mage check`: fmt-check, skills-check, vet, lint, test (-race), build.
       - name: Run checks
         run: mage check

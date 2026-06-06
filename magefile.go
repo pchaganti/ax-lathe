@@ -12,10 +12,19 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
+)
+
+// skillsSrcDir is the human-edited source of truth for skills; skillsDataDir is
+// the tracked, embeddable copy (go:embed cannot reach paths starting with ".").
+const (
+	skillsSrcDir  = ".claude/skills"
+	skillsDataDir = "internal/skills/data"
 )
 
 // Default target when `mage` is run with no arguments.
@@ -66,15 +75,102 @@ func Build() error {
 	return run("go", "build", "-o", "lathe")
 }
 
-// Check runs the full gate: fmt check, vet, lint, test, build. This is what CI
-// runs and what you should run before opening a PR. It stops at the first
-// failure.
+// Skills regenerates the embeddable copy of the skills under internal/skills/data
+// from the human-edited source at .claude/skills. The generated copy is tracked
+// in git so `go build`/`go install` work without mage.
+func Skills() error {
+	names, err := skillNames()
+	if err != nil {
+		return err
+	}
+	// Wipe and rebuild the data dir so deletions/renames in the source are
+	// reflected (and never leave stale skills behind).
+	if err := os.RemoveAll(skillsDataDir); err != nil {
+		return fmt.Errorf("clear %s: %w", skillsDataDir, err)
+	}
+	for _, name := range names {
+		src := filepath.Join(skillsSrcDir, name, "SKILL.md")
+		dst := filepath.Join(skillsDataDir, name, "SKILL.md")
+		data, err := os.ReadFile(src)
+		if err != nil {
+			return fmt.Errorf("read %s: %w", src, err)
+		}
+		if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+			return fmt.Errorf("mkdir for %s: %w", dst, err)
+		}
+		if err := os.WriteFile(dst, data, 0o644); err != nil {
+			return fmt.Errorf("write %s: %w", dst, err)
+		}
+	}
+	fmt.Printf("synced %d skills into %s\n", len(names), skillsDataDir)
+	return nil
+}
+
+// SkillsCheck fails if the embedded copy under internal/skills/data has drifted
+// from the source at .claude/skills (mirrors FmtCheck: read-only, CI-safe).
+func SkillsCheck() error {
+	names, err := skillNames()
+	if err != nil {
+		return err
+	}
+	var drift []string
+	seen := map[string]bool{}
+	for _, name := range names {
+		seen[name] = true
+		src := filepath.Join(skillsSrcDir, name, "SKILL.md")
+		dst := filepath.Join(skillsDataDir, name, "SKILL.md")
+		want, err := os.ReadFile(src)
+		if err != nil {
+			return fmt.Errorf("read %s: %w", src, err)
+		}
+		got, err := os.ReadFile(dst)
+		if err != nil {
+			drift = append(drift, fmt.Sprintf("%s (missing in data)", name))
+			continue
+		}
+		if !bytes.Equal(want, got) {
+			drift = append(drift, fmt.Sprintf("%s (content differs)", name))
+		}
+	}
+	// Catch stale skills that exist in data/ but no longer in the source.
+	if entries, err := os.ReadDir(skillsDataDir); err == nil {
+		for _, e := range entries {
+			if e.IsDir() && !seen[e.Name()] {
+				drift = append(drift, fmt.Sprintf("%s (stale in data)", e.Name()))
+			}
+		}
+	}
+	if len(drift) > 0 {
+		return fmt.Errorf("embedded skills are out of date:\n  %s\nrun `mage skills`", strings.Join(drift, "\n  "))
+	}
+	return nil
+}
+
+// skillNames lists the skill directory names under the source dir.
+func skillNames() ([]string, error) {
+	entries, err := os.ReadDir(skillsSrcDir)
+	if err != nil {
+		return nil, fmt.Errorf("read %s: %w", skillsSrcDir, err)
+	}
+	var names []string
+	for _, e := range entries {
+		if e.IsDir() {
+			names = append(names, e.Name())
+		}
+	}
+	return names, nil
+}
+
+// Check runs the full gate: fmt check, skills parity check, vet, lint, test,
+// build. This is what CI runs and what you should run before opening a PR. It
+// stops at the first failure.
 func Check() error {
 	for _, step := range []struct {
 		name string
 		fn   func() error
 	}{
 		{"fmt-check", FmtCheck},
+		{"skills-check", SkillsCheck},
 		{"vet", Vet},
 		{"lint", Lint},
 		{"test", Test},
